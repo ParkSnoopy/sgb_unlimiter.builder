@@ -1,4 +1,5 @@
-use psutil::process::{ self, Process, ProcessError };
+mod processes;
+use processes::{ Process, ProcessError };
 
 mod printer;
 use printer::{ success, error, info };
@@ -7,13 +8,13 @@ mod decoder;
 
 
 fn main() {
-    let pid_vec = process::processes().unwrap();
-    let tgt_vec = build_target();
+    let pid_iter = processes::all().unwrap();
+    let tgt_vec  = build_target();
 
     let mut suspended = 0;
     let mut total     = 0;
 
-    for pid_result in pid_vec.into_iter() {
+    for pid_result in pid_iter() {
         match pid_result {
             Ok(proc) => {
                 if suspend_target_proc(&proc, &tgt_vec) {
@@ -32,14 +33,12 @@ fn main() {
 
 fn handle_proc_error(err: ProcessError) {
     match err {
-        ProcessError::NoSuchProcess { pid     } => { error("No corresponding process", Some(format!("( pid {pid} )").as_str())); },
-        ProcessError::ZombieProcess { pid     } => { error("Is zombie process",        Some(format!("( pid {pid} )").as_str())); },
-        ProcessError::AccessDenied  { pid     } => { error("Access denied",            Some(format!("( pid {pid} )").as_str())); },
-        ProcessError::PsutilError   { pid, .. } => { error("Internal error",           Some(format!("( pid {pid} )").as_str())); },
+        ProcessError::ProcessInaccessible => { error("Process is inaccessible", None); },
+        ProcessError::Io(_)               => { error("Error while interacting with kernel", Some(format!("( err: {} )", err.to_string()).as_str())); },
     };
 }
 
-fn suspend_target_proc(proc: &Process, target_vec: &Vec<String>) -> bool {
+fn suspend_target_proc(proc: &processes::Process, target_vec: &Vec<String>) -> bool {
     let proc_name_result = proc.name();
 
     if proc_name_result.is_err() {
