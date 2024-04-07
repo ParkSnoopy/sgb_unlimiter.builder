@@ -7,4 +7,4 @@ edition = "2021"
 
 [dependencies]
 colored = "2.1.0"
-psutil = "3.3.0"
+psutil = "=3.2.2"
