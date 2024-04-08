@@ -1,23 +1,16 @@
 use colored::Colorize;
 
-const DEBUG: bool = true;
-
-
-/*
-fn _colored_printer<S: Into<String>>(head, head_color, body, body_color, tail, tail_color) {
-    unimplemented!();
-}
-*/
+const DEBUG: bool = false;
 
 
 pub fn success<S: Into<String> + Colorize>(msg: S, more: Option<S>) {
     print!("{head} {body}",
         head="[ ✓ ]".bright_green(),
-        body=msg.white(),
+        body=msg.truecolor(144, 238, 144),
     );
     if more.is_some() {
         print!(" {tail}", 
-            tail=more.unwrap().bright_black()
+            tail=more.unwrap().truecolor(200, 200, 200)
         );
     };
     println!();
@@ -26,7 +19,20 @@ pub fn success<S: Into<String> + Colorize>(msg: S, more: Option<S>) {
 pub fn error<S: Into<String> + Colorize>(msg: S, more: Option<S>) {
     print!("{head} {body}",
         head="[ ✕ ]".red(),
-        body=msg.yellow(),
+        body=msg.bright_red(),
+    );
+    if more.is_some() {
+        print!(" {tail}", 
+            tail=more.unwrap().bright_yellow()
+        );
+    };
+    println!();
+}
+
+pub fn warn<S: Into<String> + Colorize>(msg: S, more: Option<S>) {
+    print!("{head} {body}",
+        head="[ ! ]".yellow(),
+        body=msg.bright_red(),
     );
     if more.is_some() {
         print!(" {tail}", 
@@ -39,7 +45,7 @@ pub fn error<S: Into<String> + Colorize>(msg: S, more: Option<S>) {
 pub fn info<S: Into<String> + Colorize>(msg: S, more: Option<S>) {
     print!("{head} {body}",
         head="[ * ]".bright_cyan(),
-        body=msg.white(),
+        body=msg.truecolor(173, 216, 230),
     );
     if more.is_some() {
         print!(" {tail}", 
@@ -53,7 +59,7 @@ pub fn debug<S: Into<String> + Colorize>(msg: S, more: Option<S>) {
     if DEBUG {
         print!("{head} {body}",
             head="[ ∴ ]".yellow(),
-            body=msg.bright_purple(),
+            body=msg.truecolor(200, 200, 160),
         );
         if more.is_some() {
             print!(" {tail}", 

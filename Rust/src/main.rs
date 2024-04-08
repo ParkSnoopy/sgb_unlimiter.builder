@@ -1,68 +1,71 @@
-mod processes;
-use processes::{ Process, ProcessError };
-
 mod printer;
-use printer::{ success, error, info };
+use printer::{ success, error, info, warn, debug };
 
 mod decoder;
 
+mod proc_info;
+use proc_info::ProcessInformationIterator;
 
-fn main() {
-    let pid_iter = processes::all().unwrap();
-    let tgt_vec  = build_target();
+mod proc_suspender;
+use proc_suspender::suspend_process;
 
-    let mut suspended = 0;
-    let mut total     = 0;
+use console::Term;
+use ansi_term;
 
-    for pid_result in pid_iter() {
-        match pid_result {
-            Ok(proc) => {
-                if suspend_target_proc(&proc, &tgt_vec) {
-                    suspended += 1;
-                }
-                total += 1;
-            }, 
-            Err(err) => {
-                handle_proc_error(err);
-            },
-        }
-    }
 
-    success( "Done!", Some(format!("[ {suspended} / {total} ]").as_str()) );
-}
+fn build_targets() -> Vec<String> {
+    info( "Building target vector from pre-prepared bytes...", None );
 
-fn handle_proc_error(err: ProcessError) {
-    match err {
-        ProcessError::ProcessInaccessible => { error("Process is inaccessible", None); },
-        ProcessError::Io(_)               => { error("Error while interacting with kernel", Some(format!("( err: {} )", err.to_string()).as_str())); },
-    };
-}
-
-fn suspend_target_proc(proc: &processes::Process, target_vec: &Vec<String>) -> bool {
-    let proc_name_result = proc.name();
-
-    if proc_name_result.is_err() {
-        return false;
-    }
-
-    let proc_name = proc_name_result.unwrap();
-
-    if !target_vec.contains(&proc_name) {
-        return false;
-    }
-
-    info("Process suspending...", Some(format!("( {proc_name} )").as_str()));
-
-    proc.terminate().is_ok()
-}
-
-fn build_target() -> Vec<String> {
     let bytes = decoder::decode("EHQ&*E--2@:2OENF*)G@G@b5lB4Yt&:2OENF*)G@G@b6)G&g>qBP)-n@sWH<:2XZ^GA;AJAn1");
 
     if bytes.is_err() {
-        error("Decoder decode failed", None);
+        error( "Decoder decode failed", None );
         panic!();
     }
 
+    info( "Decode success!", None );
+
     String::from_utf8(bytes.unwrap()).unwrap().split("N").map(str::to_string).collect()
+}
+
+fn rm_ext_lower(pname: &String) -> String {
+    pname.split(".").collect::<Vec<&str>>()[0].to_lowercase()
+}
+
+fn main() {
+    let _enabled = ansi_term::enable_ansi_support();
+
+    let target_vec = build_targets();
+
+    let mut unique: Vec<String> = Vec::new();
+    let mut suspended = 0;
+    let mut total     = 0;
+
+    info( "Scanning...", None );
+    for proc in ProcessInformationIterator::new() {
+        let procname = rm_ext_lower(&proc.name);
+
+        if target_vec.contains( &procname ) {
+            let (c, e) = suspend_process(proc.pid);
+            debug( format!("Found: {} ( pid {} )", procname, proc.pid).as_str(), Some(format!("( c={c}, e={e} )").as_str()) );
+            suspended += 1;
+            unique.push(proc.name.clone());
+        }
+        total += 1;
+    }
+    success( "Done!", Some(format!("[ {suspended} / {total} ]").as_str()) );
+
+    unique.dedup();
+    if unique.len() < 4 {
+        warn( format!("{} unique process killed, some process may not killed", unique.len()).as_str(), None );
+    }
+
+    info( "Press any key to exit...", None );
+    let stdout = Term::buffered_stdout();
+
+    'halt: loop {
+        if let Ok(_) = stdout.read_char() {
+            break 'halt
+        }
+    }
 }
