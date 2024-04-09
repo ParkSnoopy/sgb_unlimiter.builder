@@ -12,7 +12,7 @@ use console::Term;
 
 
 mod privilege_checker;
-use deelevate::{spawn_with_normal_privileges, spawn_with_elevated_privileges};
+use deelevate::{ /*spawn_with_normal_privileges,*/ spawn_with_elevated_privileges };
 
 fn main() {
     let _enabled = ansi_term::enable_ansi_support(); // prelude imported by cargo `colored`
@@ -21,20 +21,20 @@ fn main() {
     debug("============== Checking Privilege Level ==============", None);
     privilege_checker::dee_check();
     privilege_checker::plv_check();
-    let _ = spawn_with_elevated_privileges();
+    let _elevated = spawn_with_elevated_privileges();
     debug("=========== spawn_with_elevated_privileges ===========", None);
     privilege_checker::dee_check();
     privilege_checker::plv_check();
-    /*let _ = spawn_with_normal_privileges();
+    /*let _normaled = spawn_with_normal_privileges();
     debug("============ spawn_with_normal_privileges ============", None);
     privilege_checker::dee_check();
     privilege_checker::plv_check();*/
     debug("======================================================", None);
 
 
-
-    let mut target_vec = build_targets();
-    target_vec.push("eraser".to_string());
+    let target_vec = build_targets();
+    // let mut target_vec = build_targets();
+    // target_vec.push("eraser".to_string());
     debug(format!("Build Target Vector = {:?}", &target_vec).as_str(), None);
 
     let mut suspended: Vec<String> = Vec::new();

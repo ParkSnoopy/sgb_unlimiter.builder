@@ -2,13 +2,17 @@ use winapi::shared::minwindef::FALSE;
 use winapi::shared::ntdef::HANDLE;
 
 use winapi::um::handleapi::CloseHandle;
-use winapi::um::processthreadsapi::OpenThread;
-use winapi::um::processthreadsapi::SuspendThread;
-use winapi::um::tlhelp32::CreateToolhelp32Snapshot;
-use winapi::um::tlhelp32::TH32CS_SNAPTHREAD;
-use winapi::um::tlhelp32::Thread32First;
-use winapi::um::tlhelp32::Thread32Next;
-use winapi::um::tlhelp32::THREADENTRY32;
+use winapi::um::processthreadsapi::{ 
+    OpenThread, 
+    SuspendThread, 
+};
+use winapi::um::tlhelp32::{ 
+    CreateToolhelp32Snapshot, 
+    TH32CS_SNAPTHREAD, 
+    Thread32First, 
+    Thread32Next, 
+    THREADENTRY32, 
+};
 use winapi::um::winnt::THREAD_SUSPEND_RESUME;
 
 
