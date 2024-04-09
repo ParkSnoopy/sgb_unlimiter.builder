@@ -12,3 +12,7 @@ Cargo.lock
 
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
+
+
+# PRESERVE BACKUP BUILD FILES
+240407-build-x86_64-windows-msvc/
