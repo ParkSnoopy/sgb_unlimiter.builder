@@ -1,4 +1,6 @@
 use winapi::shared::minwindef::FALSE;
+use winapi::shared::ntdef::HANDLE;
+
 use winapi::um::handleapi::CloseHandle;
 use winapi::um::processthreadsapi::OpenThread;
 use winapi::um::processthreadsapi::SuspendThread;
@@ -7,14 +9,13 @@ use winapi::um::tlhelp32::TH32CS_SNAPTHREAD;
 use winapi::um::tlhelp32::Thread32First;
 use winapi::um::tlhelp32::Thread32Next;
 use winapi::um::tlhelp32::THREADENTRY32;
-use winapi::um::winnt::HANDLE;
 use winapi::um::winnt::THREAD_SUSPEND_RESUME;
 
 
-pub fn suspend_process(pid: u32) -> (u32, bool) {
+pub fn suspend_process(pid: u32) -> (u32, Vec<bool>) {
     unsafe {
-        let mut has_err = false;
-        let mut count: u32 = 0;
+        let mut errors: Vec<bool> = Vec::new();
+        let mut count : u32 = 0;
 
         let te: &mut THREADENTRY32 = &mut std::mem::zeroed();
         (*te).dwSize = std::mem::size_of::<THREADENTRY32>() as u32;
@@ -27,7 +28,7 @@ pub fn suspend_process(pid: u32) -> (u32, bool) {
                     let tid = (*te).th32ThreadID;
 
                     let thread: HANDLE = OpenThread(THREAD_SUSPEND_RESUME, FALSE, tid);
-                    has_err |= SuspendThread(thread) as i32 == -1i32;
+                    errors.push( SuspendThread(thread) as i32 == -1i32 );
 
                     CloseHandle(thread);
                     count += 1;
@@ -41,6 +42,7 @@ pub fn suspend_process(pid: u32) -> (u32, bool) {
 
         CloseHandle(snapshot);
 
-        (count, has_err)
+        (count, errors)
     }
 }
+

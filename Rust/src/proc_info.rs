@@ -2,6 +2,9 @@ use winapi::um::tlhelp32::{Process32First, Process32Next, LPPROCESSENTRY32, Crea
 use winapi::um::winnt::HANDLE;
 use winapi::um::handleapi::INVALID_HANDLE_VALUE;
 
+use crate::localutils::printer::{ info };
+
+
 pub struct ProcessInformation {
     pub pid: u32,
     pub name: String,
@@ -33,7 +36,7 @@ impl ProcessInformationIterator {
         if h_process_snapshot == INVALID_HANDLE_VALUE {
             panic!("Invalid handle value");
         }
-        println!("Got process snapshot handle, moving on...");
+        info("Got process snapshot handle, moving on...", None);
         let mut pe: PROCESSENTRY32;
         unsafe {
             pe = ::std::mem::zeroed();

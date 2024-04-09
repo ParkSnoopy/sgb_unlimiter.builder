@@ -1,65 +1,74 @@
-mod printer;
-use printer::{ success, error, info, warn, debug };
-
-mod decoder;
-
+mod localutils;
+mod target_builder;
 mod proc_info;
-use proc_info::ProcessInformationIterator;
-
 mod proc_suspender;
+
+use localutils::printer::{ success, info, warn, debug };
+use target_builder::{ build_targets, santinize };
+use proc_info::ProcessInformationIterator;
 use proc_suspender::suspend_process;
 
 use console::Term;
-use ansi_term;
 
 
-fn build_targets() -> Vec<String> {
-    info( "Building target vector from pre-prepared bytes...", None );
-
-    let bytes = decoder::decode("EHQ&*E--2@:2OENF*)G@G@b5lB4Yt&:2OENF*)G@G@b6)G&g>qBP)-n@sWH<:2XZ^GA;AJAn1");
-
-    if bytes.is_err() {
-        error( "Decoder decode failed", None );
-        panic!();
-    }
-
-    info( "Decode success!", None );
-
-    String::from_utf8(bytes.unwrap()).unwrap().split("N").map(str::to_string).collect()
-}
-
-fn rm_ext_lower(pname: &String) -> String {
-    pname.split(".").collect::<Vec<&str>>()[0].to_lowercase()
-}
+mod privilege_checker;
+use deelevate::{spawn_with_normal_privileges, spawn_with_elevated_privileges};
 
 fn main() {
-    let _enabled = ansi_term::enable_ansi_support();
+    let _enabled = ansi_term::enable_ansi_support(); // prelude imported by cargo `colored`
 
-    let target_vec = build_targets();
 
-    let mut unique: Vec<String> = Vec::new();
-    let mut suspended = 0;
-    let mut total     = 0;
+    debug("============== Checking Privilege Level ==============", None);
+    privilege_checker::dee_check();
+    privilege_checker::plv_check();
+    let _ = spawn_with_elevated_privileges();
+    debug("=========== spawn_with_elevated_privileges ===========", None);
+    privilege_checker::dee_check();
+    privilege_checker::plv_check();
+    /*let _ = spawn_with_normal_privileges();
+    debug("============ spawn_with_normal_privileges ============", None);
+    privilege_checker::dee_check();
+    privilege_checker::plv_check();*/
+    debug("======================================================", None);
 
-    info( "Scanning...", None );
-    for proc in ProcessInformationIterator::new() {
-        let procname = rm_ext_lower(&proc.name);
+
+
+    let mut target_vec = build_targets();
+    target_vec.push("eraser".to_string());
+    debug(format!("Build Target Vector = {:?}", &target_vec).as_str(), None);
+
+    let mut suspended: Vec<String> = Vec::new();
+    let mut tried = 0;
+    let mut total = 0;
+
+    println!();
+    info( "Start scan", None );
+    let proc_iterator = ProcessInformationIterator::new();
+    println!();
+    for proc in proc_iterator {
+        // debug(format!("Handle: {}", &proc.name).as_str(), None);
+        let procname = santinize( &proc.name );
 
         if target_vec.contains( &procname ) {
-            let (c, e) = suspend_process(proc.pid);
-            debug( format!("Found: {} ( pid {} )", procname, proc.pid).as_str(), Some(format!("( c={c}, e={e} )").as_str()) );
-            suspended += 1;
-            unique.push(proc.name.clone());
+            let (cnt, err_v) = suspend_process(proc.pid);
+            debug( format!("Found: {} ( pid {} )", &procname, proc.pid).as_str(), Some(format!("( cnt={cnt}, err={err_v:?} )").as_str()) );
+            tried += 1;
+            if err_v.iter().map(|b| *b as u32).sum::<u32>() == 0 {
+                suspended.push(proc.name.clone());
+            }
         }
         total += 1;
     }
-    success( "Done!", Some(format!("[ {suspended} / {total} ]").as_str()) );
 
-    unique.dedup();
-    if unique.len() < 4 {
-        warn( format!("{} unique process killed, some process may not killed", unique.len()).as_str(), None );
+    debug("",None);
+    success( format!("Done! [ {} / {} ]", suspended.len(), total).as_str(), Some(format!("( with {tried} attempts )").as_str()) );
+
+    suspended.dedup();
+    if suspended.len() < 4 {
+        warn( format!("{} unique process killed, some process may not killed", suspended.len()).as_str(), None );
     }
 
+    println!();
     info( "Press any key to exit...", None );
     let stdout = Term::buffered_stdout();
 

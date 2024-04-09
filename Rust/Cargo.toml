@@ -9,9 +9,12 @@ edition = "2021"
 ansi_term = "0.12.1"
 colored = "2.1.0"
 console = "0.15.8"
+deelevate = "0.2.0"
+privilege_level = "0.1.1"
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["impl-default", "debug", "winuser", "wingdi", "winnt", "processthreadsapi", "handleapi", "tlhelp32"] }
 
 [build-dependencies]
+static_vcruntime = "2.0.0"
 winres = "0.1.12"
