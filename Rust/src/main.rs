@@ -1,80 +1,89 @@
+#![allow(dead_code)]
+
+// my localutils
 mod localutils;
-mod target_builder;
-mod proc_info;
-mod proc_suspender;
+use localutils::printer::{ success, info, warn, debug, error };
+mod target;
 
-use localutils::printer::{ success, info, warn, debug };
-use target_builder::{ build_targets, santinize };
-use proc_info::ProcessInformationIterator;
-use proc_suspender::suspend_process;
-
+// for: at the end, press any key to exit
 use console::Term;
 
+// get pids
+mod proc_info;
+use proc_info::ProcessInformationIterator;
 
-mod privilege_checker;
-use deelevate::{ /*spawn_with_normal_privileges,*/ spawn_with_elevated_privileges };
+// WINDOWS NT (PowerShell) utility
+mod windows_native_local;
+use windows_native_local::ntpsapi::{ NtSuspendProcess };
+use windows::{
+    Win32::System::Threading::{ OpenProcess, PROCESS_ALL_ACCESS, PROCESS_SUSPEND_RESUME },
+    Foundation::{ HANDLE, NTSTATUS },
+};
+
+/*use ntutils::{
+    OpenProcess,
+    NtSuspendProcess,
+    NtResumeProcess,
+    PROCESS_ALL_ACCESS,
+};*/
 
 fn main() {
     let _enabled = ansi_term::enable_ansi_support(); // prelude imported by cargo `colored`
 
-
-    debug("============== Checking Privilege Level ==============", None);
-    privilege_checker::dee_check();
-    privilege_checker::plv_check();
-    let _elevated = spawn_with_elevated_privileges();
-    debug("=========== spawn_with_elevated_privileges ===========", None);
-    privilege_checker::dee_check();
-    privilege_checker::plv_check();
-    /*let _normaled = spawn_with_normal_privileges();
-    debug("============ spawn_with_normal_privileges ============", None);
-    privilege_checker::dee_check();
-    privilege_checker::plv_check();*/
-    debug("======================================================", None);
-
-
-    let target_vec = build_targets();
+    let target_vec = target::build();
     // let mut target_vec = build_targets();
     // target_vec.push("eraser".to_string());
     debug(format!("Build Target Vector = {:?}", &target_vec).as_str(), None);
 
-    let mut suspended: Vec<String> = Vec::new();
-    let mut tried = 0;
-    let mut total = 0;
+    let mut suspended: Vec<NTSTATUS> = Vec::new();
+    let mut tried: u32 = 0;
+    let mut total: u32 = 0;
 
     println!();
     info( "Start scan", None );
-    let proc_iterator = ProcessInformationIterator::new();
-    println!();
-    for proc in proc_iterator {
+    for proc in ProcessInformationIterator::new() {
         // debug(format!("Handle: {}", &proc.name).as_str(), None);
-        let procname = santinize( &proc.name );
+        let procname = target::santinize( &proc.name );
 
         if target_vec.contains( &procname ) {
-            let (cnt, err_v) = suspend_process(proc.pid);
-            debug( format!("Found: {} ( pid {} )", &procname, proc.pid).as_str(), Some(format!("( cnt={cnt}, err={err_v:?} )").as_str()) );
-            tried += 1;
-            if err_v.iter().map(|b| *b as u32).sum::<u32>() == 0 {
-                suspended.push(proc.name.clone());
+            debug( format!("Found: {} ( pid {} )", &procname, proc.pid).as_str(), None);//Some(format!("( cnt={cnt}, err={err_v:?} )").as_str()) );
+
+            let handle_result = unsafe { OpenProcess(PROCESS_ALL_ACCESS, false, proc.pid) };
+            let mut suspend_ret_value: NTSTATUS;
+
+            match handle_result {
+                Ok(handle) => {
+                    let suspend_ret_value = unsafe { NtSuspendProcess(handle) };
+                },
+                Err(err) => {
+                    let suspend_ret_value = -1;
+                    error(format!("Get Handle Failed: {}", err.message()).as_str(), None);
+                }
             }
+
+            tried += 1;
+            suspended.push(suspend_ret_value);
+
         }
         total += 1;
     }
 
     debug("",None);
-    success( format!("Done! [ {} / {} ]", suspended.len(), total).as_str(), Some(format!("( with {tried} attempts )").as_str()) );
+    success( format!("Done! [ {suspended:?} / {total} ]").as_str(), Some(format!("( with {tried} attempts )").as_str()) );
 
-    suspended.dedup();
     if suspended.len() < 4 {
-        warn( format!("{} unique process killed, some process may not killed", suspended.len()).as_str(), None );
+        warn( format!("{suspended:?} unique process killed, some process may not killed").as_str(), None );
     }
 
+
+    // POST-RUN IDLE LOOP //
     println!();
     info( "Press any key to exit...", None );
     let stdout = Term::buffered_stdout();
-
     'halt: loop {
         if let Ok(_) = stdout.read_char() {
             break 'halt
         }
     }
+
 }
