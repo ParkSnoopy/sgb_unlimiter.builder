@@ -1,6 +1,6 @@
 use colored::Colorize;
 
-const DEBUG: bool = true;
+const DEBUG: bool = false;
 
 
 pub fn success<S: Into<String> + Colorize>(msg: S, more: Option<S>) {
