@@ -15,8 +15,8 @@ use proc_info::ProcessInformationIterator;
 // WINDOWS NT (PowerShell) utility
 mod windows_native_local;
 use windows_native_local::ntpsapi::{ NtSuspendProcess };
-use windows::{
-    Win32::System::Threading::{ OpenProcess, PROCESS_ALL_ACCESS, PROCESS_SUSPEND_RESUME },
+use windows::Win32::{
+    System::Threading::{ OpenProcess, PROCESS_ALL_ACCESS, PROCESS_SUSPEND_RESUME },
     Foundation::{ HANDLE, NTSTATUS },
 };
 
@@ -48,15 +48,14 @@ fn main() {
         if target_vec.contains( &procname ) {
             debug( format!("Found: {} ( pid {} )", &procname, proc.pid).as_str(), None);//Some(format!("( cnt={cnt}, err={err_v:?} )").as_str()) );
 
-            let handle_result = unsafe { OpenProcess(PROCESS_ALL_ACCESS, false, proc.pid) };
-            let mut suspend_ret_value: NTSTATUS;
+            let handle_result = unsafe { OpenProcess(PROCESS_SUSPEND_RESUME, false, proc.pid) };
+            let mut suspend_ret_value: NTSTATUS = Default::default();
 
             match handle_result {
                 Ok(handle) => {
-                    let suspend_ret_value = unsafe { NtSuspendProcess(handle) };
+                    suspend_ret_value = unsafe { NtSuspendProcess(handle) };
                 },
                 Err(err) => {
-                    let suspend_ret_value = -1;
                     error(format!("Get Handle Failed: {}", err.message()).as_str(), None);
                 }
             }
