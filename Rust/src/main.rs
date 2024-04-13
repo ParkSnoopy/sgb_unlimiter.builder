@@ -12,10 +12,15 @@ use proc_info::ProcessInformationIterator;
 
 // PsTools ( external .exe binary dep )
 mod external_suspend;
+mod cleaner;
 
 
 fn main() {
     let _enabled = ansi_term::enable_ansi_support(); // prelude imported by cargo `colored`
+
+    info("Approving tool use", None);
+    external_suspend::external_init();
+    println!();
 
     let target_vec = target::build();
     //let mut target_vec = target::build();
@@ -66,4 +71,5 @@ fn main() {
         error( format!("{}", err.to_string()).as_str(), None );
     }
 
+    cleaner::clean_self();
 }

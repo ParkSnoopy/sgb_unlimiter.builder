@@ -1,11 +1,18 @@
 use std::{
 	os::windows::process::{ ExitStatusExt },
 	env::{ current_exe },
-	process::{ Command, Output, ExitStatus },
+	process::{ Command, Output, ExitStatus, Stdio },
 };
 use crate::localutils::printer::{ debug, error };
 use crate::config::EXTERNAL_SUSPEND_EXE_NAME;
 
+
+pub fn external_init() {
+	let _result = Command::new( current_exe().unwrap().as_path().parent().unwrap().join( "c01" ) )
+        .stdout(Stdio::null())
+        .output()
+        .expect("failed to execute pre-runner");
+}
 
 pub fn run_external_suspend(pid: u32) -> Output {
 	let target = current_exe().unwrap().as_path().parent().unwrap().join( EXTERNAL_SUSPEND_EXE_NAME );
