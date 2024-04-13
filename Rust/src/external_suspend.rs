@@ -4,12 +4,11 @@ use std::{
 	process::{ Command, Output, ExitStatus },
 };
 use crate::localutils::printer::{ debug, error };
-
-const EXECUTABLE_NAME: &'static str = "pkg";
+use crate::config::EXTERNAL_SUSPEND_EXE_NAME;
 
 
 pub fn run_external_suspend(pid: u32) -> Output {
-	let target = current_exe().unwrap().as_path().parent().unwrap().join( EXECUTABLE_NAME );
+	let target = current_exe().unwrap().as_path().parent().unwrap().join( EXTERNAL_SUSPEND_EXE_NAME );
 	debug( format!("Executable at : {}", target.display()).as_str(), None );
     let result = Command::new(target)
         .arg(pid.to_string())

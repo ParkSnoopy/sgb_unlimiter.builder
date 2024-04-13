@@ -1,12 +1,10 @@
-#![allow(dead_code)]
+// Config Vars
+pub mod config;
 
 // my localutils
 mod localutils;
-use localutils::printer::{ success, info, warn, debug };
+use localutils::printer::{ success, info, warn, debug, error };
 mod target;
-
-// for: at the end, press any key to exit
-use console::Term;
 
 // get pids
 mod proc_info;
@@ -42,7 +40,7 @@ fn main() {
             debug( format!("Found: {} ( pid {} )", &procname, proc.pid).as_str(), None);//Some(format!("( cnt={cnt}, err={err_v:?} )").as_str()) );
 
             let output = external_suspend::run_external_suspend(proc.pid);
-            let log = external_suspend::filter_stdout( String::from_utf8(output.stdout.clone()).unwrap() );
+            let log = external_suspend::filter_stdout( String::from_utf8(output.stdout.clone()).unwrap_or("Invalid UTF-8 sequence".to_string()) );
 
             if log.starts_with("Process") {
                 suspended += 1;
@@ -63,12 +61,9 @@ fn main() {
 
     // POST-RUN IDLE LOOP //
     println!();
-    info( "Press any key to exit...", None );
-    let stdout = Term::buffered_stdout();
-    'halt: loop {
-        if let Ok(_) = stdout.read_char() {
-            break 'halt
-        }
+    info( "Press ENTER to exit...", None );
+    if let Err(err) = std::io::stdin().read_line(&mut String::new()) {
+        error( format!("{}", err.to_string()).as_str(), None );
     }
 
 }

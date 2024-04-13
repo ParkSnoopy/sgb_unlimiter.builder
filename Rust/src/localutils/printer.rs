@@ -1,6 +1,6 @@
 use colored::Colorize;
 
-const DEBUG: bool = false;
+use crate::config::DEBUG;
 
 
 pub fn success<S: Into<String> + Colorize>(msg: S, more: Option<S>) {
