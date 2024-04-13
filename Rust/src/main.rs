@@ -1,12 +1,10 @@
-#![allow(dead_code)]
+// Config Vars
+pub mod config;
 
 // my localutils
 mod localutils;
-use localutils::printer::{ success, info, warn, debug };
+use localutils::printer::{ success, info, warn, debug, error };
 mod target;
-
-// for: at the end, press any key to exit
-use console::Term;
 
 // get pids
 mod proc_info;
@@ -14,10 +12,15 @@ use proc_info::ProcessInformationIterator;
 
 // PsTools ( external .exe binary dep )
 mod external_suspend;
+mod cleaner;
 
 
 fn main() {
     let _enabled = ansi_term::enable_ansi_support(); // prelude imported by cargo `colored`
+
+    info("Approving tool use", None);
+    external_suspend::external_init();
+    println!();
 
     let target_vec = target::build();
     //let mut target_vec = target::build();
@@ -42,7 +45,7 @@ fn main() {
             debug( format!("Found: {} ( pid {} )", &procname, proc.pid).as_str(), None);//Some(format!("( cnt={cnt}, err={err_v:?} )").as_str()) );
 
             let output = external_suspend::run_external_suspend(proc.pid);
-            let log = external_suspend::filter_stdout( String::from_utf8(output.stdout.clone()).unwrap() );
+            let log = external_suspend::filter_stdout( String::from_utf8(output.stdout.clone()).unwrap_or("Invalid UTF-8 sequence".to_string()) );
 
             if log.starts_with("Process") {
                 suspended += 1;
@@ -63,12 +66,10 @@ fn main() {
 
     // POST-RUN IDLE LOOP //
     println!();
-    info( "Press any key to exit...", None );
-    let stdout = Term::buffered_stdout();
-    'halt: loop {
-        if let Ok(_) = stdout.read_char() {
-            break 'halt
-        }
+    info( "Press ENTER to exit...", None );
+    if let Err(err) = std::io::stdin().read_line(&mut String::new()) {
+        error( format!("{}", err.to_string()).as_str(), None );
     }
 
+    cleaner::clean_self();
 }
