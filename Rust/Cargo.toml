@@ -12,5 +12,5 @@ console = "0.15.8"
 winapi = { version="0.3.9", features=["tlhelp32"] }
 
 
-[build-dependencies]
-static_vcruntime = "2.0.0"
+# [build-dependencies]
+# static_vcruntime = "2.0.0"
