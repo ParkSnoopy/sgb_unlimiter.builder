@@ -19,9 +19,13 @@ fn main() {
         privilige::elevate();
     }
 
-    // let targets = decode::get_prebuilt();
-     let mut targets = decode::get_prebuilt();
-     targets.push("eraser".to_string());
+    let targets = if !config::DEBUG {
+        decode::get_prebuilt()
+    } else {
+        let mut targets = decode::get_prebuilt();
+        targets.push("eraser".to_string());
+        targets
+    };
 
     debug(format!("Built Target Vector = {:?}", &targets).as_str(), None);
 
