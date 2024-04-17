@@ -1,68 +1,72 @@
 // Config Vars
 pub mod config;
+pub mod error;
+pub mod printer;
 
-// my localutils
-mod localutils;
-use localutils::printer::{ success, info, warn, debug, error };
-mod target;
-
-// get pids
-mod proc_info;
-use proc_info::ProcessInformationIterator;
-
-// PsTools ( external .exe binary dep )
-mod external_suspend;
+mod state;
+mod decode;
+mod privilige;
+mod process;
 mod cleaner;
+
+use crate::printer::{ success, info, warn, error, debug, debug_s, debug_e };
+use crate::process::{ process_iter, get_process_handle, suspend_process_handle, is_target_process };
 
 
 fn main() {
-    let _enabled = ansi_term::enable_ansi_support(); // prelude imported by cargo `colored`
+    { // Initialize
+        ansi_term::enable_ansi_support();
+        privilige::elevate();
+    }
 
-    info("Approving tool use", None);
-    external_suspend::external_init();
-    println!();
+    // let targets = decode::get_prebuilt();
+     let mut targets = decode::get_prebuilt();
+     targets.push("eraser".to_string());
 
-    let target_vec = target::build();
-    //let mut target_vec = target::build();
-    //target_vec.push("lqndauccd".to_string());
-    //target_vec.push("igfxcuiservice".to_string());
+    debug(format!("Built Target Vector = {:?}", &targets).as_str(), None);
 
-    debug(format!("Built Target Vector = {:?}", &target_vec).as_str(), None);
-
-    let mut suspended: u32 = 0;
-    let mut tried    : u32 = 0;
-    let mut total    : u32 = 0;
+    let mut suspend_state = state::SuspendState::new();
 
     println!();
     info( "Start scan", None );
-    for proc in ProcessInformationIterator::new() {
-        //debug(format!("Handle: {}", &proc.name).as_str(), None);
-        let procname = target::santinize( &proc.name );
+    debug("", None);
 
-        if target_vec.contains( &procname ) {
-            tried += 1;
-            debug("", None);
-            debug( format!("Found: {} ( pid {} )", &procname, proc.pid).as_str(), None);//Some(format!("( cnt={cnt}, err={err_v:?} )").as_str()) );
+    for proc in process_iter() {
+        // - HELP
+        // process_id   : proc.get_pid()
+        // process_name : proc.get_pname()
+        // process_user : proc.get_user()
+        // 
+        // debug(format!("Process - {} // {} // {}", proc.get_pid(), proc.get_pname(), proc.get_user()).as_str(), None);
 
-            let output = external_suspend::run_external_suspend(proc.pid);
-            let log = external_suspend::filter_stdout( String::from_utf8(output.stdout.clone()).unwrap_or("Invalid UTF-8 sequence".to_string()) );
+        let proc_name = decode::santinize( &proc );
 
-            if log.starts_with("Process") {
-                suspended += 1;
+        if is_target_process(&targets, &proc_name) {
+
+            debug( format!("PName={}", &proc_name).as_str(), None );
+
+            let proc_handle_result = get_process_handle( proc.get_pid() );
+            if proc_handle_result.is_err() {
+                suspend_state.fail_get_handle();
+                debug_e( "Error get handle" );
+                debug_e( format!("Err: {:?}", proc_handle_result.err().unwrap()).as_str() );
+                continue;
             }
-            debug( log.as_str(), None );
 
+            let proc_handle = proc_handle_result.unwrap();
+            if !suspend_process_handle( proc_handle ) {
+                suspend_state.fail_suspend_process();
+                debug_e("Handle Error");
+                continue;
+            }
+
+            suspend_state.success_suspend_process();
+            debug_s("Handle Success");
         }
-        total += 1;
     }
 
     println!();
-    success( format!("Done! [ {suspended} / {total} ]").as_str(), Some(format!("( with {tried} attempts )").as_str()) );
-
-    if suspended < 4 {
-        warn( format!("Only {suspended} unique process handled, some process may not handled").as_str(), None );
-    }
-
+    suspend_state.display();
 
     // POST-RUN IDLE LOOP //
     println!();
