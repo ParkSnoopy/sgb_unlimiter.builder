@@ -9,13 +9,13 @@ mod privilige;
 mod process;
 mod cleaner;
 
-use crate::printer::{ success, info, warn, error, debug, debug_s, debug_e };
+use crate::printer::{ info, error, debug, debug_s, debug_e };
 use crate::process::{ process_iter, get_process_handle, suspend_process_handle, is_target_process };
 
 
 fn main() {
     { // Initialize
-        ansi_term::enable_ansi_support();
+        let _ = ansi_term::enable_ansi_support();
         privilige::elevate();
     }
 
@@ -45,6 +45,12 @@ fn main() {
 
             debug( format!("PName={}", &proc_name).as_str(), None );
 
+            if proc.get_user() == "access denied:OpenProcess failed".to_string() {
+                suspend_state.fail_access_denied();
+                debug_e( "Error Access Denied" );
+                continue;
+            }
+
             let proc_handle_result = get_process_handle( proc.get_pid() );
             if proc_handle_result.is_err() {
                 suspend_state.fail_get_handle();
@@ -62,6 +68,9 @@ fn main() {
 
             suspend_state.success_suspend_process();
             debug_s("Handle Success");
+
+        } else {
+            suspend_state.no_match();
         }
     }
 
