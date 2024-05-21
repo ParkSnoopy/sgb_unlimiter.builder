@@ -1,5 +1,5 @@
 use crate::printer::{ success, debug, warn };
-
+use crate::config::{ SUSPEND_SHOULD };
 
 pub struct SuspendState {
     total: u32,
@@ -58,7 +58,7 @@ impl SuspendState {
             \r  - Access Denied    : {}
             \r  - Suspend Failed   : {}
         ", self.fail_gethandle, self.fail_accessdenied, self.fail_suspendprocess).as_str(), None );
-        if self.success_suspend < 4 {
+        if self.success_suspend < SUSPEND_SHOULD {
             warn( format!("Only {} unique process handled, some process may not handled", self.success_suspend).as_str(), None );
         }
     }

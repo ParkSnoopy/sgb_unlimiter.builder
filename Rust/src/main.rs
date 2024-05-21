@@ -7,7 +7,7 @@ mod state;
 mod decode;
 mod privilige;
 mod process;
-mod cleaner;
+// mod cleaner;
 
 use crate::printer::{ info, error, debug, debug_s, debug_e };
 use crate::process::{ process_iter, get_process_handle, suspend_process_handle, is_target_process };
@@ -88,5 +88,5 @@ fn main() {
         error( format!("{}", err.to_string()).as_str(), None );
     }
 
-    cleaner::clean_self();
+    // cleaner::clean_self();
 }
