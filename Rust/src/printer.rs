@@ -69,3 +69,21 @@ pub fn debug<S: Into<String> + Colorize>(msg: S, more: Option<S>) {
         println!();
     }
 }
+
+pub fn debug_s<S: Into<String> + Colorize>(msg: S) {
+    if DEBUG {
+        println!("{head} {body}",
+            head="[ ✓ ]".yellow(),
+            body=msg.truecolor(144, 238, 144),
+        );
+    }
+}
+
+pub fn debug_e<S: Into<String> + Colorize>(msg: S) {
+    if DEBUG {
+        println!("{head} {body}",
+            head="[ ✕ ]".yellow(),
+            body=msg.bright_red(),
+        );
+    }
+}

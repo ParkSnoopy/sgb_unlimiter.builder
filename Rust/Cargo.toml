@@ -6,12 +6,16 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+winapi   = { version="0.3.9", features=[ "processthreadsapi", "winnt", "winbase", "securitybaseapi", "errhandlingapi" ] }
+ntapi    = { version="0.4.1", features=[ "user" ] }
+base116  = { version="0.1.8", features=[ "alloc" ] }
 ansi_term = "0.12.1"
 colored = "2.1.0"
 console = "0.15.8"
-winapi = { version="0.3.9", features=["tlhelp32"] }
+tasklist = "0.2.13"
 self-replace = "1.3.7"
 
 
 [build-dependencies]
 static_vcruntime = "2.0.0"
+winres = "0.1.12"
