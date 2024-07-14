@@ -9,7 +9,7 @@ mod privilige;
 mod process;
 // mod cleaner; /* deprecated @ v1.1.5 */
 
-use crate::printer::{ info, error, debug, debug_s, debug_e };
+use crate::printer::{ info, debug, debug_s, debug_e };
 use crate::process::{ process_iter, get_process_handle, suspend_process_handle, is_target_process };
 
 
@@ -83,10 +83,20 @@ fn main() {
 
     // POST-RUN IDLE LOOP //
     println!();
+    {
+        use std::process::Command;
+        Command::new("cmd")
+            .arg("/c")
+            .arg("pause")
+            .status()
+            .unwrap();
+    }
+    /*
     info( "Press ENTER to exit...", None );
     if let Err(err) = std::io::stdin().read_line(&mut String::new()) {
         error( format!("{}", err.to_string()).as_str(), None );
     }
+    */
 
     // cleaner::clean_self();
 }
