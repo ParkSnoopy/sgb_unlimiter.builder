@@ -7,7 +7,7 @@ mod state;
 mod decode;
 mod privilige;
 mod process;
-// mod cleaner;
+// mod cleaner; /* deprecated @ v1.1.5 */
 
 use crate::printer::{ info, error, debug, debug_s, debug_e };
 use crate::process::{ process_iter, get_process_handle, suspend_process_handle, is_target_process };
