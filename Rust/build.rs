@@ -1,20 +1,8 @@
-use {
-    std::{
-        env,
-        io,
-    },
-    winres::WindowsResource,
-};
+use std::io;
 
 fn main() -> io::Result<()> {
+    #[cfg(all(windows, target_env = "msvc"))]
     static_vcruntime::metabuild();
 
-    if env::var_os("CARGO_CFG_WINDOWS").is_some() {
-        WindowsResource::new()
-            // This path can be absolute, or relative to your crate root.
-            .set_icon("assets/icon.ico")
-            .compile()?;
-    }
-    
     Ok(())
 }
