@@ -12,6 +12,7 @@ base116  = { version="0.1.8", features=[ "alloc" ] }
 ansi_term = "0.12.1"
 colored = "2.1.0"
 tasklist = "0.2.15"
+eyre = "0.6.12"
 
 [target.'cfg(all(windows, target_env = "msvc"))'.build-dependencies]
 static_vcruntime = "2.0"

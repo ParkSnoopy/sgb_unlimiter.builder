@@ -10,15 +10,20 @@ mod process;
 // mod cleaner; /* deprecated @ v1.1.5 */
 
 use crate::printer::{ info, debug, debug_s, debug_e };
-use crate::process::{ process_iter, get_process_handle, suspend_process_handle, is_target_process };
+use crate::process::{ process_iter, get_process_handle, suspend_process_handle, is_target_process, santinize };
+
+use std::time::{ Duretion };
+use std::thread::sleep;
+
+use eyre::Result;
 
 
-fn main() {
-    { // Initialize
-        let _ = ansi_term::enable_ansi_support();
-        privilige::elevate();
-    }
+fn main() -> Result<()> {
+    // Initialize Jobs : Set Up
+    ansi_term::enable_ansi_support()?;
+    privilige::elevate();
 
+    // Initialize Jobs : Build Target Vector
     let targets = if !config::DEBUG {
         decode::get_prebuilt()
     } else {
@@ -26,14 +31,45 @@ fn main() {
         targets.push("eraser".to_string());
         targets
     };
-
     debug(format!("Built Target Vector = {:?}", &targets).as_str(), None);
 
-    let mut suspend_state = state::SuspendState::new();
 
+    // Main Termination Loop
+    let mut successful_runs: u32 = 0;
+    for iteration in 1..=( config::SUSPEND_UNTIL / config::SUSPEND_EACH ) {
+        if do_suspend_targets(&targets) {
+            successful_runs += 1;
+        }
+        if successful_runs > config::EARLY_TERMINATE_THRESHOLD {
+            info("Early termination due to consistent successful runs", None);
+            break;
+        }
+        debug(format!("ITER {:03}", &iteration).as_str(), None);
+        debug(format!("SRUN {:03}", &successful_runs).as_str(), None);
+        debug("", None);
+    }
+
+
+    // POST-RUN IDLE LOOP //
+    {
+        println!();
+        use std::process::Command;
+        Command::new("cmd")
+            .arg("/c")
+            .arg("pause")
+            .status()
+            .unwrap();
+    }
+
+    Ok(())
+}
+
+fn do_suspend_targets(targets: &Vec<String>) -> bool {
     println!();
     info( "Start scan", None );
     debug("", None);
+
+    let mut suspend_state = state::SuspendState::new();
 
     for proc in process_iter() {
         // - HELP
@@ -43,9 +79,9 @@ fn main() {
         // 
         // debug(format!("Process - {} // {} // {}", proc.get_pid(), proc.get_pname(), proc.get_user()).as_str(), None);
 
-        let proc_name = decode::santinize( &proc );
+        let proc_name = santinize( &proc );
 
-        if is_target_process(&targets, &proc_name) {
+        if is_target_process(targets, &proc_name) {
 
             debug( format!("PName={}", &proc_name).as_str(), None );
 
@@ -78,25 +114,9 @@ fn main() {
         }
     }
 
-    println!();
+    // print: current suspend iteration's result status
     suspend_state.display();
 
-    // POST-RUN IDLE LOOP //
-    println!();
-    {
-        use std::process::Command;
-        Command::new("cmd")
-            .arg("/c")
-            .arg("pause")
-            .status()
-            .unwrap();
-    }
-    /*
-    info( "Press ENTER to exit...", None );
-    if let Err(err) = std::io::stdin().read_line(&mut String::new()) {
-        error( format!("{}", err.to_string()).as_str(), None );
-    }
-    */
-
-    // cleaner::clean_self();
+    // return: suspended process count exceeded `config::SUSPEND_SHOULD` threshold or not
+    suspend_state.is_successful_run()
 }

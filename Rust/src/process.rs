@@ -6,6 +6,8 @@ use winapi::shared::ntdef::{ NULL, NTSTATUS };
 use winapi::shared::minwindef::{ DWORD };
 use ntapi::ntpsapi::{ NtSuspendProcess };
 
+use tasklist::{ Process };
+
 use crate::config::{ SUSPEND_ATTEMPT };
 use crate::printer::{ debug };
 
@@ -53,4 +55,8 @@ pub fn is_target_process(targets: &Vec<String>, proc_name: &String) -> bool {
         }
     }
     false
+}
+
+pub fn santinize(proc: &Process) -> String {
+    proc.get_pname().to_lowercase()
 }

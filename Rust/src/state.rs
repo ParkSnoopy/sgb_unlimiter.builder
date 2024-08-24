@@ -53,13 +53,23 @@ impl SuspendState {
 
     pub fn display(&self) {
         success( format!("Done! [ {} / {} ]", self.success_suspend, self.total).as_str(), Some(format!("( with {} attempts )", self.tried).as_str()) );
+
         debug( format!("
             \r  - GetHandle Failed : {}
             \r  - Access Denied    : {}
             \r  - Suspend Failed   : {}
-        ", self.fail_gethandle, self.fail_accessdenied, self.fail_suspendprocess).as_str(), None );
-        if self.success_suspend < SUSPEND_SHOULD {
+            \r", 
+            self.fail_gethandle,
+            self.fail_accessdenied,
+            self.fail_suspendprocess
+        ).as_str(), None );
+
+        if self.is_successful_run() {
             warn( format!("Only {} unique process handled, some process may not handled", self.success_suspend).as_str(), None );
         }
+    }
+
+    pub fn is_successful_run(&self) -> bool {
+        self.success_suspend < SUSPEND_SHOULD
     }
 }

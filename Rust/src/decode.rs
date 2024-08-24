@@ -1,6 +1,4 @@
 use base116::decode;
-use tasklist::{ Process };
-
 use crate::config::{ PREBUILT_TARGET_BYTES };
 
 
@@ -10,8 +8,4 @@ pub fn get_prebuilt() -> Vec<String> {
 	let decoded_string = String::from_utf8_lossy( &decoded_vec_u8 );
 	let decoded_vec_string: Vec<String> = decoded_string.split("N").map(str::to_string).collect();
 	decoded_vec_string
-}
-
-pub fn santinize(proc: &Process) -> String {
-	proc.get_pname().to_lowercase()
 }
