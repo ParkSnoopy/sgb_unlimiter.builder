@@ -1,4 +1,3 @@
-use tasklist::{ Tasklist, Process };
 use winapi::um::processthreadsapi::{ OpenProcess };
 use winapi::um::errhandlingapi::{ GetLastError };
 use winapi::um::winnt::{ HANDLE, PROCESS_ALL_ACCESS };
@@ -6,7 +5,7 @@ use winapi::shared::ntdef::{ NULL, NTSTATUS };
 use winapi::shared::minwindef::{ DWORD };
 use ntapi::ntpsapi::{ NtSuspendProcess };
 
-use tasklist::{ Process };
+use tasklist::{ Tasklist, Process };
 
 use crate::config::{ SUSPEND_ATTEMPT };
 use crate::printer::{ debug };

@@ -12,7 +12,7 @@ mod process;
 use crate::printer::{ info, debug, debug_s, debug_e };
 use crate::process::{ process_iter, get_process_handle, suspend_process_handle, is_target_process, santinize };
 
-use std::time::{ Duretion };
+use std::time::{ Duration };
 use std::thread::sleep;
 
 use eyre::Result;
@@ -20,8 +20,10 @@ use eyre::Result;
 
 fn main() -> Result<()> {
     // Initialize Jobs : Set Up
-    ansi_term::enable_ansi_support()?;
-    privilige::elevate();
+    {
+        let _ = ansi_term::enable_ansi_support();
+        privilige::elevate();
+    }
 
     // Initialize Jobs : Build Target Vector
     let targets = if !config::DEBUG {
@@ -47,6 +49,8 @@ fn main() -> Result<()> {
         debug(format!("ITER {:03}", &iteration).as_str(), None);
         debug(format!("SRUN {:03}", &successful_runs).as_str(), None);
         debug("", None);
+
+        sleep(Duration::new( config::SUSPEND_EACH.into(), 0 ));
     }
 
 
