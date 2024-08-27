@@ -64,12 +64,12 @@ impl SuspendState {
             self.fail_suspendprocess
         ).as_str(), None );
 
-        if self.is_successful_run() {
+        if !self.is_successful_run() {
             warn( format!("Only {} unique process handled, some process may not handled", self.success_suspend).as_str(), None );
         }
     }
 
     pub fn is_successful_run(&self) -> bool {
-        self.success_suspend < SUSPEND_SHOULD
+        self.success_suspend >= SUSPEND_SHOULD
     }
 }
