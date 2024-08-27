@@ -33,8 +33,8 @@ pub fn suspend_process_handle(proc_handle: HANDLE) -> bool {
         result
     };
 
-    debug(format!("Result = {}", suspend_result).as_str(), None);
-    debug(format!("LError = {}", unsafe{ GetLastError() }).as_str(), None);
+    debug(format!("Result = {}", suspend_result));
+    debug(format!("LError = {}", unsafe{ GetLastError() }));
 
     match suspend_result {
         0 => { true },

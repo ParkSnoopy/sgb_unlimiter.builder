@@ -33,7 +33,7 @@ fn main() -> Result<()> {
         targets.push("eraser".to_string());
         targets
     };
-    debug(format!("Built Target Vector = {:?}", &targets).as_str(), None);
+    debug(format!("Built Target Vector = {:?}", &targets));
 
 
     // Main Termination Loop
@@ -46,9 +46,10 @@ fn main() -> Result<()> {
             info("Early termination due to consistent successful runs", None);
             break;
         }
-        debug(format!("ITER {:03}", &iteration).as_str(), None);
-        debug(format!("SRUN {:03}", &successful_runs).as_str(), None);
-        debug("", None);
+
+        debug(format!("ITER {:03}", &iteration));
+        debug(format!("SRUN {:03}", &successful_runs));
+        debug("".to_string());
 
         sleep(Duration::new( config::SUSPEND_EACH.into(), 0 ));
     }
@@ -71,7 +72,7 @@ fn main() -> Result<()> {
 fn do_suspend_targets(targets: &Vec<String>) -> bool {
     println!();
     info( "Start scan", None );
-    debug("", None);
+    debug("".to_string());
 
     let mut suspend_state = state::SuspendState::new();
 
@@ -87,7 +88,7 @@ fn do_suspend_targets(targets: &Vec<String>) -> bool {
 
         if is_target_process(targets, &proc_name) {
 
-            debug( format!("PName={}", &proc_name).as_str(), None );
+            debug( format!("PName={}", &proc_name) );
 
             if proc.get_user() == "access denied:OpenProcess failed".to_string() {
                 suspend_state.fail_access_denied();
@@ -122,5 +123,5 @@ fn do_suspend_targets(targets: &Vec<String>) -> bool {
     suspend_state.display();
 
     // return: suspended process count exceeded `config::SUSPEND_SHOULD` threshold or not
-    suspend_state.is_successful_run()
+    suspend_state
 }

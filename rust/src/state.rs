@@ -62,7 +62,7 @@ impl SuspendState {
             self.fail_gethandle,
             self.fail_accessdenied,
             self.fail_suspendprocess
-        ).as_str(), None );
+        ) );
 
         if !self.is_successful_run() {
             warn( format!("Only {} unique process handled, some process may not handled", self.success_suspend).as_str(), None );
