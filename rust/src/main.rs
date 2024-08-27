@@ -16,14 +16,12 @@ use std::time::{ Duration };
 use std::thread::sleep;
 
 use eyre::Result;
+use ansi_escapes;
 
 
 fn main() -> Result<()> {
     // Initialize Jobs : Set Up
-    {
-        let _ = ansi_term::enable_ansi_support();
-        privilige::elevate();
-    }
+    init();
 
     // Initialize Jobs : Build Target Vector
     let targets = if !config::DEBUG {
@@ -37,12 +35,28 @@ fn main() -> Result<()> {
 
 
     // Main Termination Loop
+    prepare_run();
+    let estimated_runs = config::SUSPEND_UNTIL / config::SUSPEND_EACH;
     let mut successful_runs: u32 = 0;
-    for iteration in 1..=( config::SUSPEND_UNTIL / config::SUSPEND_EACH ) {
-        if do_suspend_targets(&targets) {
+    for iteration in 1..=estimated_runs {
+        prepare_iteration();
+
+        info(format!("Estimated {}", &estimated_runs).as_str(), None);
+        info(format!("Iteration {}", &iteration).as_str(),
+        Some(format!("( {:2.2} % )", 
+            (100_f64 * iteration as f64 / estimated_runs as f64)
+        ).as_str()));
+
+        let suspend_state = do_suspend_targets(&targets);
+        let was_success: bool = suspend_state.is_successful_run();
+
+        debug(format!("WAS_SUCCESSFUL_RUN: {:?}", was_success));
+
+        if was_success {
             successful_runs += 1;
         }
-        if successful_runs > config::EARLY_TERMINATE_THRESHOLD {
+        if successful_runs >= config::EARLY_TERMINATE_THRESHOLD {
+            println!();
             info("Early termination due to consistent successful runs", None);
             break;
         }
@@ -58,18 +72,44 @@ fn main() -> Result<()> {
     // POST-RUN IDLE LOOP //
     {
         println!();
+        info(format!("This window will automatically close after {} second(s)", config::IDLE_AFTER_FINISH).as_str(), None);
+        info("You can close this window manually", None);
+        sleep(Duration::new( config::IDLE_AFTER_FINISH, 0 ));
+
+        /*
         use std::process::Command;
         Command::new("cmd")
             .arg("/c")
             .arg("pause")
             .status()
             .unwrap();
+        */
     }
 
     Ok(())
 }
 
-fn do_suspend_targets(targets: &Vec<String>) -> bool {
+
+fn init() {
+    privilige::elevate();
+    let _enabled = ansi_term::enable_ansi_support();
+}
+
+fn prepare_run() {
+    print!("\n\n{}",
+        ansi_escapes::CursorSavePosition,
+    );
+}
+
+fn prepare_iteration() {
+    print!("{}\n\n{}",
+        ansi_escapes::ClearScreen,
+        ansi_escapes::CursorRestorePosition,
+    );
+}
+
+
+fn do_suspend_targets(targets: &Vec<String>) -> state::SuspendState {
     println!();
     info( "Start scan", None );
     debug("".to_string());

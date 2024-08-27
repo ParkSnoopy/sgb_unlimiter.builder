@@ -4,8 +4,9 @@ pub const SUSPEND_ATTEMPT: u8 = 2;
 pub const SUSPEND_SHOULD: u32 = 6;
 
 pub const SUSPEND_UNTIL: u32 = 300; // second(s)
-pub const SUSPEND_EACH : u32 = 3;   // second(s)
+pub const SUSPEND_EACH : u32 = 2;   // second(s)
 
-pub const EARLY_TERMINATE_THRESHOLD: u32 = 20;
+pub const EARLY_TERMINATE_THRESHOLD: u32 = 15;
+pub const IDLE_AFTER_FINISH: u64 = 30;
 
 pub const DEBUG: bool = false;
