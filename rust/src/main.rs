@@ -9,17 +9,26 @@ mod privilige;
 mod process;
 // mod cleaner; /* deprecated @ v1.1.5 */
 
-use crate::printer::{ info, debug, debug_s, debug_e };
+use crate::printer::{ info, debug, debug_s, debug_e, error as error_printer };
 use crate::process::{ process_iter, get_process_handle, suspend_process_handle, is_target_process, santinize };
 
 use std::time::{ Duration };
 use std::thread::sleep;
+use std::sync::atomic::{ AtomicBool, Ordering };
+use std::sync::{ Arc };
 
 use eyre::Result;
 use ansi_escapes;
+use ctrlc;
 
 
 fn main() -> Result<()> {
+    let running = Arc::new( AtomicBool::new(true) );
+    let r = running.clone();
+    ctrlc::set_handler( move || {
+        r.store( false, Ordering::SeqCst );
+    }).expect("Failed to bind handler on `Ctrl+C`");
+
     // Initialize Jobs : Set Up
     init();
 
@@ -33,12 +42,20 @@ fn main() -> Result<()> {
     };
     debug(format!("Built Target Vector = {:?}", &targets));
 
-
     // Main Termination Loop
     prepare_run();
     let estimated_runs = config::SUSPEND_UNTIL / config::SUSPEND_EACH;
-    let mut successful_runs: u32 = 0;
     for iteration in 1..=estimated_runs {
+
+        if !running.load( Ordering::SeqCst ) {
+            println!();
+            error_printer("Got `Ctrl+C` signal!", None);
+            info("Performing early exit...", None);
+
+            sleep(Duration::new( config::CTRLC_IDLE, 0 ));
+            break;
+        }
+
         prepare_iteration();
 
         info(format!("Estimated {}", &estimated_runs).as_str(), None);
@@ -51,18 +68,7 @@ fn main() -> Result<()> {
         let was_success: bool = suspend_state.is_successful_run();
 
         debug(format!("WAS_SUCCESSFUL_RUN: {:?}", was_success));
-
-        if was_success {
-            successful_runs += 1;
-        }
-        if successful_runs >= config::EARLY_TERMINATE_THRESHOLD {
-            println!();
-            info("Early termination due to consistent successful runs", None);
-            break;
-        }
-
         debug(format!("ITER {:03}", &iteration));
-        debug(format!("SRUN {:03}", &successful_runs));
         debug("".to_string());
 
         sleep(Duration::new( config::SUSPEND_EACH.into(), 0 ));
@@ -70,7 +76,7 @@ fn main() -> Result<()> {
 
 
     // POST-RUN IDLE LOOP //
-    {
+    if running.load( Ordering::SeqCst ) {
         println!();
         info(format!("This window will automatically close after {} second(s)", config::IDLE_AFTER_FINISH).as_str(), None);
         info("You can close this window manually", None);

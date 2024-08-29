@@ -3,10 +3,10 @@ pub const PREBUILT_TARGET_BYTES: &[u8] = &[199, 177, 77, 85, 229, 154, 144, 124,
 pub const SUSPEND_ATTEMPT: u8 = 2;
 pub const SUSPEND_SHOULD: u32 = 6;
 
-pub const SUSPEND_UNTIL: u32 = 300; // second(s)
-pub const SUSPEND_EACH : u32 = 2;   // second(s)
+pub const SUSPEND_UNTIL: u32 = 1800; // second(s)
+pub const SUSPEND_EACH : u32 = 2;    // second(s)
 
-pub const EARLY_TERMINATE_THRESHOLD: u32 = 15;
 pub const IDLE_AFTER_FINISH: u64 = 30;
+pub const CTRLC_IDLE: u64 = 3;
 
 pub const DEBUG: bool = false;
