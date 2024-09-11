@@ -7,7 +7,6 @@ mod state;
 mod decode;
 mod privilige;
 mod process;
-// mod cleaner; /* deprecated @ v1.1.5 */
 
 use crate::printer::{ info, debug, debug_s, debug_e, error as error_printer };
 use crate::process::{ process_iter, get_process_handle, suspend_process_handle, is_target_process, santinize };
@@ -81,15 +80,6 @@ fn main() -> Result<()> {
         info(format!("This window will automatically close after {} second(s)", config::IDLE_AFTER_FINISH).as_str(), None);
         info("You can close this window manually", None);
         sleep(Duration::new( config::IDLE_AFTER_FINISH, 0 ));
-
-        /*
-        use std::process::Command;
-        Command::new("cmd")
-            .arg("/c")
-            .arg("pause")
-            .status()
-            .unwrap();
-        */
     }
 
     Ok(())
