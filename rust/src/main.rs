@@ -88,7 +88,7 @@ fn main() -> Result<()> {
 
 fn init() {
     privilige::elevate();
-    let _enabled = ansi_term::enable_ansi_support();
+    let _enabled = enable_ansi_support::enable_ansi_support();
 }
 
 fn prepare_run() {

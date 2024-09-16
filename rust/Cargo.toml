@@ -2,25 +2,31 @@
 name = "sgb_unlimiter"
 version = "1.1.7"
 edition = "2021"
-authors = ["ParkSnoopy", "mil-acc-github <milacc0000@gmail.com>"]
+authors = [
+  "ParkSnoopy",
+  "mil-acc-github <milacc0000@gmail.com>"
+]
 license = "GPL-3.0-or-later"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+
 [dependencies]
-winapi   = { version="0.3.9", features=[ "processthreadsapi", "winnt", "winbase", "securitybaseapi", "errhandlingapi" ] }
-ntapi    = { version="0.4.1", features=[ "user" ] }
-base116  = { version="0.1.8", features=[ "alloc" ] }
-ansi_term = "0.12.1"
-colored = "2.1.0"
-tasklist = "0.2.15"
-eyre = "0.6.12"
-ansi-escapes = "0.2.0"
-ctrlc = "3.4.5"
+ansi-escapes = "0.2"
+base116  = { version="0.1", features=[ "alloc" ] }
+colored = "2.1"
+ctrlc = "3.4"
+eyre = "0.6"
+
+[target.'cfg(windows)'.dependencies]
+enable-ansi-support = "0.2"
+ntapi    = { version="0.4", features=[ "user" ] }
+tasklist = "0.2"
+winapi   = { version="0.3", features=[ "processthreadsapi", "winnt", "winbase", "securitybaseapi", "errhandlingapi" ] }
 
 
 [build-dependencies]
-eyre = "0.6.12"
+eyre = "0.6"
 
-[target.x86_64-pc-windows-msvc.build-dependencies]
-winres = "0.1.12"
+[target.'cfg(windows)'.build-dependencies]
+winres = "0.1"
