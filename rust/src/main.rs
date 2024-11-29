@@ -7,19 +7,26 @@ mod decode;
 mod privilige;
 mod process;
 
-use crate::process::{ process_iter, get_process_handle, suspend_process_handle, is_target_process, santinize };
+use crate::process::{
+    process_iter,
+    get_process_handle,
+    suspend_process_handle,
+    is_target_process,
+    santinize,
+};
 
 use std::time::{ Duration };
 use std::thread::sleep;
 use std::sync::{ Arc, RwLock };
 
-use eyre::Result;
-use ansi_escapes;
-use ctrlc;
 use log::{ trace, debug, info, error };
 use log::{ LevelFilter, Level };
 use nu_ansi_term::Color;
 
+use ansi_escapes::{
+    ClearScreen,
+    //CursorSavePosition,
+    //CursorRestorePosition,
 
     EnterAlternativeScreen,
     ExitAlternativeScreen,
@@ -80,13 +87,12 @@ fn main() -> eyre::Result<()> {
         decode::get_prebuilt()
     } else {
         let mut targets = decode::get_prebuilt();
-        targets.push("eraser".to_string());
+        targets.push("HxD".to_lowercase());
         targets
     };
     debug!("Built Target Vector = {:?}", &targets);
 
     // Main Termination Loop
-    prepare_run();
     let estimated_runs = config::SUSPEND_UNTIL / config::SUSPEND_EACH;
     for iteration in 1..=estimated_runs {
         iteration_init();
@@ -193,6 +199,6 @@ fn do_suspend_targets(targets: &Vec<String>) -> state::SuspendState {
     // print: current suspend iteration's result status
     suspend_state.display();
 
-    // return: suspended process count exceeded `config::SUSPEND_SHOULD` threshold or not
+    // return: suspended process count exceeded `config::SUSPEND_UNIQUE_SHOULD` threshold or not
     suspend_state
 }

@@ -1,4 +1,5 @@
-use crate::config::{ SUSPEND_SHOULD };
+use crate::config;
+
 use std::collections::BTreeSet;
 
 use log::{ info, debug, warn };
