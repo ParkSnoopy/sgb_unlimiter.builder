@@ -8,7 +8,9 @@ use ntapi::ntpsapi::{ NtSuspendProcess };
 use tasklist::{ Tasklist, Process };
 
 use crate::config::{ SUSPEND_ATTEMPT };
-use crate::printer::{ debug };
+
+use log::{ debug };
+
 
 
 pub fn process_iter() -> impl Iterator<Item=Process> {
@@ -33,8 +35,8 @@ pub fn suspend_process_handle(proc_handle: HANDLE) -> bool {
         result
     };
 
-    debug(format!("Result = {}", suspend_result));
-    debug(format!("LError = {}", unsafe{ GetLastError() }));
+    debug!("Result = {}", suspend_result);
+    debug!("LError = {}", unsafe {GetLastError()} );
 
     match suspend_result {
         0 => { true },

@@ -1,5 +1,10 @@
-use crate::printer::{ success, debug, warn };
 use crate::config::{ SUSPEND_SHOULD };
+use std::collections::BTreeSet;
+
+use log::{ info, debug, warn };
+use nu_ansi_term::Color;
+
+
 
 pub struct SuspendState {
     total: u32,
@@ -8,6 +13,8 @@ pub struct SuspendState {
     fail_accessdenied: u32,
     fail_suspendprocess: u32,
     success_suspend: u32,
+
+    record: BTreeSet<String>,
 }
 
 impl SuspendState {
@@ -19,6 +26,8 @@ impl SuspendState {
             fail_accessdenied: 0,
             fail_suspendprocess: 0,
             success_suspend: 0,
+
+            record: BTreeSet::new(),
         }
     }
 
@@ -46,15 +55,24 @@ impl SuspendState {
         self.fail_suspendprocess += 1;
     }
 
-    pub fn success_suspend_process(&mut self) {
+    pub fn success_suspend_process(&mut self, proc_name: &String) {
+        self.record.insert(proc_name.to_uppercase());
         self.tried_suspend();
         self.success_suspend += 1;
     }
 
     pub fn display(&self) {
-        success( format!("Done! [ {} / {} ]", self.success_suspend, self.total).as_str(), Some(format!("( with {} attempts )", self.tried).as_str()) );
+        let body = Color::Fixed( 2).paint(format!("[ {} / {} ]",
+            self.success_suspend,
+            self.total,
+        ));
+        let tail = Color::Fixed(28).paint(format!("( with {} attempts )",
+            self.tried,
+        ));
 
-        debug( format!("
+        info!("Done! {body} {tail}");
+
+        debug!("
             \r  - GetHandle Failed : {}
             \r  - Access Denied    : {}
             \r  - Suspend Failed   : {}
@@ -62,14 +80,14 @@ impl SuspendState {
             self.fail_gethandle,
             self.fail_accessdenied,
             self.fail_suspendprocess
-        ) );
+        );
 
         if !self.is_successful_run() {
-            warn( format!("Only {} unique process handled, some process may not handled", self.success_suspend).as_str(), None );
+            warn!("Only {} unique process handled, some process may not handled", self.record.len());
         }
     }
 
     pub fn is_successful_run(&self) -> bool {
-        self.success_suspend >= SUSPEND_SHOULD
+        self.record.len() >= config::SUSPEND_UNIQUE_SHOULD
     }
 }

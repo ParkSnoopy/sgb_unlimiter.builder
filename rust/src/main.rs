@@ -1,31 +1,75 @@
 // Config Vars
 pub mod config;
 pub mod error;
-pub mod printer;
 
 mod state;
 mod decode;
 mod privilige;
 mod process;
 
-use crate::printer::{ info, debug, debug_s, debug_e, error as error_printer };
 use crate::process::{ process_iter, get_process_handle, suspend_process_handle, is_target_process, santinize };
 
 use std::time::{ Duration };
 use std::thread::sleep;
-use std::sync::atomic::{ AtomicBool, Ordering };
-use std::sync::{ Arc };
+use std::sync::{ Arc, RwLock };
 
 use eyre::Result;
 use ansi_escapes;
 use ctrlc;
+use log::{ trace, debug, info, error };
+use log::{ LevelFilter, Level };
+use nu_ansi_term::Color;
 
 
-fn main() -> Result<()> {
-    let running = Arc::new( AtomicBool::new(true) );
-    let r = running.clone();
-    ctrlc::set_handler( move || {
-        r.store( false, Ordering::SeqCst );
+    EnterAlternativeScreen,
+    ExitAlternativeScreen,
+};
+
+
+
+fn init() {
+    privilige::elevate();
+    let _ = enable_ansi_support::enable_ansi_support();
+
+    env_logger::Builder::new()
+        .filter_level(LevelFilter::Info)
+        .format(|buf, record| {
+            use std::io::Write;
+
+            let body = match record.level() {
+                Level::Error => Color::Fixed(11).paint(record.args().to_string()),
+                Level::Warn  => Color::Fixed(11).paint(record.args().to_string()),
+                Level::Info  => Color::Fixed(14).paint(record.args().to_string()),
+                Level::Debug => Color::Fixed( 8).paint(record.args().to_string()),
+                Level::Trace => Color::Fixed( 8).paint(record.args().to_string()),
+            };
+            let level_style = buf.default_level_style(record.level());
+
+            writeln!(buf, "  [{level_style}{:^7}{level_style:#}] {body}",
+                record.level(),
+            )
+        })
+        .init();
+
+    print!("{}",
+        EnterAlternativeScreen,
+    );
+}
+
+fn cleanup() {
+    print!("{}",
+        ExitAlternativeScreen,
+    );
+}
+
+fn main() -> eyre::Result<()> {
+    let running = Arc::new(RwLock::new(true));
+    
+    ctrlc::set_handler({
+        let running = running.clone();
+        move || {
+            *running.write().unwrap() = false;
+        }
     }).expect("Failed to bind handler on `Ctrl+C`");
 
     // Initialize Jobs : Set Up
@@ -39,76 +83,67 @@ fn main() -> Result<()> {
         targets.push("eraser".to_string());
         targets
     };
-    debug(format!("Built Target Vector = {:?}", &targets));
+    debug!("Built Target Vector = {:?}", &targets);
 
     // Main Termination Loop
     prepare_run();
     let estimated_runs = config::SUSPEND_UNTIL / config::SUSPEND_EACH;
     for iteration in 1..=estimated_runs {
+        iteration_init();
 
-        if !running.load( Ordering::SeqCst ) {
-            println!();
-            error_printer("Got `Ctrl+C` signal!", None);
-            info("Performing early exit...", None);
+        info!("Progress: '{}' out of '{}'", iteration, estimated_runs);
 
-            sleep(Duration::new( config::CTRLC_IDLE, 0 ));
-            break;
+        match do_suspend_targets(&targets).is_successful_run() {
+            false => {
+                let mut exit = false;
+
+                for _ in 0..config::SUSPEND_EACH {
+                    sleep(Duration::new(1, 0));
+
+                    if !*running.read().unwrap() {
+                        println!();
+                        error!("Got `Ctrl+C` signal!");
+                        info!("Proceed to Early Exit...");
+
+                        exit = true;
+                        break;
+                    };
+                };
+
+                if exit {
+                    break;
+                };
+            },
+            true => {
+                println!();
+                info!("'{}' unique process(es) handled successfully!", config::SUSPEND_UNIQUE_SHOULD);
+                info!("Proceed to Early Exit...");
+
+                break;
+            },
         }
-
-        prepare_iteration();
-
-        info(format!("Estimated {}", &estimated_runs).as_str(), None);
-        info(format!("Iteration {}", &iteration).as_str(),
-        Some(format!("( {:2.2} % )", 
-            (100_f64 * iteration as f64 / estimated_runs as f64)
-        ).as_str()));
-
-        let suspend_state = do_suspend_targets(&targets);
-        let was_success: bool = suspend_state.is_successful_run();
-
-        debug(format!("WAS_SUCCESSFUL_RUN: {:?}", was_success));
-        debug(format!("ITER {:03}", &iteration));
-        debug("".to_string());
-
-        sleep(Duration::new( config::SUSPEND_EACH.into(), 0 ));
     }
 
+    println!();
+    info!("This window will automatically closed after {} second(s)", config::IDLE_AFTER_FINISH);
+    info!("You can close this window manually");
+    sleep(Duration::new( config::IDLE_AFTER_FINISH, 0 ));
 
-    // POST-RUN IDLE LOOP //
-    if running.load( Ordering::SeqCst ) {
-        println!();
-        info(format!("This window will automatically close after {} second(s)", config::IDLE_AFTER_FINISH).as_str(), None);
-        info("You can close this window manually", None);
-        sleep(Duration::new( config::IDLE_AFTER_FINISH, 0 ));
-    }
-
+    cleanup();
     Ok(())
 }
 
-
-fn init() {
-    privilige::elevate();
-    let _enabled = enable_ansi_support::enable_ansi_support();
-}
-
-fn prepare_run() {
-    print!("\n\n{}",
-        ansi_escapes::CursorSavePosition,
+fn iteration_init() {
+    print!("{}",
+        ClearScreen,
     );
+    print!("\n");
 }
-
-fn prepare_iteration() {
-    print!("{}\n\n{}",
-        ansi_escapes::ClearScreen,
-        ansi_escapes::CursorRestorePosition,
-    );
-}
-
 
 fn do_suspend_targets(targets: &Vec<String>) -> state::SuspendState {
     println!();
-    info( "Start scan", None );
-    debug("".to_string());
+    info!("Start scan");
+    debug!("");
 
     let mut suspend_state = state::SuspendState::new();
 
@@ -118,37 +153,37 @@ fn do_suspend_targets(targets: &Vec<String>) -> state::SuspendState {
         // process_name : proc.get_pname()
         // process_user : proc.get_user()
         // 
-        // debug(format!("Process - {} // {} // {}", proc.get_pid(), proc.get_pname(), proc.get_user()).as_str(), None);
+        trace!("Process - {} // {} // {}", proc.get_pid(), proc.get_pname(), proc.get_user());
 
         let proc_name = santinize( &proc );
 
         if is_target_process(targets, &proc_name) {
 
-            debug( format!("PName={}", &proc_name) );
+            debug!("ProcName = {}", &proc_name);
 
-            if proc.get_user() == "access denied:OpenProcess failed".to_string() {
+            if proc.get_user().as_str() == "access denied:OpenProcess failed" {
                 suspend_state.fail_access_denied();
-                debug_e( "Error Access Denied" );
+                error!("Access Denied Error");
                 continue;
             }
 
             let proc_handle_result = get_process_handle( proc.get_pid() );
-            if proc_handle_result.is_err() {
+            if let Err(e) = proc_handle_result {
                 suspend_state.fail_get_handle();
-                debug_e( "Error get handle" );
-                debug_e( format!("Err: {:?}", proc_handle_result.err().unwrap()).as_str() );
+                error!("Error get handle");
+                error!("Err: {:?}", e);
                 continue;
             }
 
             let proc_handle = proc_handle_result.unwrap();
             if !suspend_process_handle( proc_handle ) {
                 suspend_state.fail_suspend_process();
-                debug_e("Handle Error");
+                error!("Handle Error");
                 continue;
             }
 
-            suspend_state.success_suspend_process();
-            debug_s("Handle Success");
+            suspend_state.success_suspend_process(&proc_name);
+            debug!("Handle Success");
 
         } else {
             suspend_state.no_match();
