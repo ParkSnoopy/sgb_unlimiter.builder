@@ -2,8 +2,17 @@
 name = "sgb_unlimiter"
 version = "0.1.0"
 edition = "2021"
+authors = [
+  "ParkSnoopy <sunwoo2539@gmail.com>",
+  "mil-acc-github <milacc0000@gmail.com>"
+]
+license = "GPL-3.0-or-later"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[profile.release]
+strip = true
+lto   = true
+
 
 [dependencies]
 colored = "2.1.0"
