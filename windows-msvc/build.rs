@@ -1,14 +1,19 @@
 use eyre::Result;
 
+use std::env;
+
+
 
 fn main() -> Result<()> {
-    #[cfg(windows)] // Build host machine have to be WindowsOS in order to compile with manifest/icon
-    {
-        use winres;
+    if let Some(_) = env::var_os("CARGO_FEATURE_NOSCRIPT") {
+        return Ok(());
+    }
 
-        let mut res = winres::WindowsResource::new();
+    use winres;
 
-        res.set_manifest(r#"
+    let mut res = winres::WindowsResource::new();
+
+    res.set_manifest(r#"
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
     <security>
@@ -18,12 +23,10 @@ fn main() -> Result<()> {
     </security>
   </trustInfo>
 </assembly>
-        "#);
+    "#);
+    res.set_icon("assets/icon.ico");
 
-        res.set_icon("assets/icon.ico");
-
-        res.compile()?;
-    }
+    res.compile()?;
 
     Ok(())
 }

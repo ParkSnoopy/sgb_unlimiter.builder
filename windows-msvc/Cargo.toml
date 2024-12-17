@@ -14,6 +14,10 @@ strip = true
 lto   = true
 
 
+[features]
+noscript = []
+
+
 [dependencies]
 ansi-escapes = "0.2"
 nu-ansi-term = "0.50"
@@ -22,16 +26,11 @@ ctrlc = "3.4"
 eyre = "0.6"
 log = { version = "0.4", features = ["max_level_trace", "release_max_level_info"] }
 env_logger = "0.11"
-
-[target.'cfg(windows)'.dependencies]
 enable-ansi-support = "0.2"
 tasklist = "0.2"
 ntapi    = { version="0.4", features=["user"] }
 winapi   = { version="0.3", features=["processthreadsapi", "winnt", "winbase", "securitybaseapi", "errhandlingapi"] }
 
-
 [build-dependencies]
 eyre = "0.6"
-
-[target.'cfg(windows)'.build-dependencies]
 winres = "0.1"
