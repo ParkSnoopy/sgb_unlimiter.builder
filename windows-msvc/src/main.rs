@@ -75,13 +75,7 @@ fn main() -> eyre::Result<()> {
     init();
 
     // Initialize Jobs : Build Target Vector
-    let targets = if !config::DEBUG {
-        decode::get_prebuilt()
-    } else {
-        let mut targets = decode::get_prebuilt();
-        targets.push("HxD".to_lowercase());
-        targets
-    };
+    let targets = decode::get_prebuilt();
     debug!("Built Target Vector = {:?}", &targets);
 
     // Main Termination Loop

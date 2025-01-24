@@ -12,5 +12,3 @@ pub const SUSPEND_UNTIL: u64 = 1800; // second(s)
 pub const SUSPEND_EACH: u64 = 3; // second(s)
 
 pub const IDLE_AFTER_FINISH: u64 = 3;
-
-pub const DEBUG: bool = false;
