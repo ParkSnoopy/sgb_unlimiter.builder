@@ -1,6 +1,5 @@
-use std::fmt;
 use std::error;
-
+use std::fmt;
 
 pub type DecodeResult<T> = std::result::Result<T, DecodeError>;
 
@@ -14,7 +13,6 @@ impl fmt::Display for DecodeError {
 }
 
 impl error::Error for DecodeError {}
-
 
 pub fn print_type_of<T>(_: &T) {
     println!("{}", std::any::type_name::<T>())
