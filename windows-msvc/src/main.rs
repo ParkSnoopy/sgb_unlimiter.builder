@@ -2,37 +2,30 @@
 pub mod config;
 pub mod error;
 
-mod state;
 mod decode;
 mod privilige;
 mod process;
+mod state;
 
 use crate::process::{
-    process_iter,
-    get_process_handle,
-    suspend_process_handle,
-    is_target_process,
-    santinize,
+    get_process_handle, is_target_process, process_iter, santinize, suspend_process_handle,
 };
 
-use std::time::{ Duration };
+use std::sync::{Arc, RwLock};
 use std::thread::sleep;
-use std::sync::{ Arc, RwLock };
+use std::time::Duration;
 
-use log::{ trace, debug, info, error };
-use log::{ LevelFilter, Level };
+use log::{debug, error, info, trace};
+use log::{Level, LevelFilter};
 use nu_ansi_term::Color;
 
 use ansi_escapes::{
     ClearScreen,
     //CursorSavePosition,
     //CursorRestorePosition,
-
     EnterAlternativeScreen,
     ExitAlternativeScreen,
 };
-
-
 
 fn init() {
     privilige::elevate();
@@ -45,39 +38,38 @@ fn init() {
 
             let body = match record.level() {
                 Level::Error => Color::Fixed(11).paint(record.args().to_string()),
-                Level::Warn  => Color::Fixed(11).paint(record.args().to_string()),
-                Level::Info  => Color::Fixed(14).paint(record.args().to_string()),
-                Level::Debug => Color::Fixed( 8).paint(record.args().to_string()),
-                Level::Trace => Color::Fixed( 8).paint(record.args().to_string()),
+                Level::Warn => Color::Fixed(11).paint(record.args().to_string()),
+                Level::Info => Color::Fixed(14).paint(record.args().to_string()),
+                Level::Debug => Color::Fixed(8).paint(record.args().to_string()),
+                Level::Trace => Color::Fixed(8).paint(record.args().to_string()),
             };
             let level_style = buf.default_level_style(record.level());
 
-            writeln!(buf, "  [{level_style}{:^7}{level_style:#}] {body}",
+            writeln!(
+                buf,
+                "  [{level_style}{:^7}{level_style:#}] {body}",
                 record.level(),
             )
         })
         .init();
 
-    print!("{}",
-        EnterAlternativeScreen,
-    );
+    print!("{}", EnterAlternativeScreen,);
 }
 
 fn cleanup() {
-    print!("{}",
-        ExitAlternativeScreen,
-    );
+    print!("{}", ExitAlternativeScreen,);
 }
 
 fn main() -> eyre::Result<()> {
     let running = Arc::new(RwLock::new(true));
-    
+
     ctrlc::set_handler({
         let running = running.clone();
         move || {
             *running.write().unwrap() = false;
         }
-    }).expect("Failed to bind handler on `Ctrl+C`");
+    })
+    .expect("Failed to bind handler on `Ctrl+C`");
 
     // Initialize Jobs : Set Up
     init();
@@ -114,35 +106,39 @@ fn main() -> eyre::Result<()> {
                         exit = true;
                         break;
                     };
-                };
+                }
 
                 if exit {
                     break;
                 };
-            },
+            }
             true => {
                 println!();
-                info!("'{}' unique process(es) handled successfully!", config::SUSPEND_UNIQUE_SHOULD);
+                info!(
+                    "'{}' unique process(es) handled successfully!",
+                    config::SUSPEND_UNIQUE_SHOULD
+                );
                 info!("Proceed to Early Exit...");
 
                 break;
-            },
+            }
         }
     }
 
     println!();
-    info!("This window will automatically closed after {} second(s)", config::IDLE_AFTER_FINISH);
+    info!(
+        "This window will automatically closed after {} second(s)",
+        config::IDLE_AFTER_FINISH
+    );
     info!("You can close this window manually");
-    sleep(Duration::new( config::IDLE_AFTER_FINISH, 0 ));
+    sleep(Duration::new(config::IDLE_AFTER_FINISH, 0));
 
     cleanup();
     Ok(())
 }
 
 fn iteration_init() {
-    print!("{}",
-        ClearScreen,
-    );
+    print!("{}", ClearScreen,);
     print!("\n");
 }
 
@@ -158,13 +154,17 @@ fn do_suspend_targets(targets: &Vec<String>) -> state::SuspendState {
         // process_id   : proc.get_pid()
         // process_name : proc.get_pname()
         // process_user : proc.get_user()
-        // 
-        trace!("Process - {} // {} // {}", proc.get_pid(), proc.get_pname(), proc.get_user());
+        //
+        trace!(
+            "Process - {} // {} // {}",
+            proc.get_pid(),
+            proc.get_pname(),
+            proc.get_user()
+        );
 
-        let proc_name = santinize( &proc );
+        let proc_name = santinize(&proc);
 
         if is_target_process(targets, &proc_name) {
-
             debug!("ProcName = {}", &proc_name);
 
             if proc.get_user().as_str() == "access denied:OpenProcess failed" {
@@ -173,7 +173,7 @@ fn do_suspend_targets(targets: &Vec<String>) -> state::SuspendState {
                 continue;
             }
 
-            let proc_handle_result = get_process_handle( proc.get_pid() );
+            let proc_handle_result = get_process_handle(proc.get_pid());
             if let Err(e) = proc_handle_result {
                 suspend_state.fail_get_handle();
                 error!("Error get handle");
@@ -182,7 +182,7 @@ fn do_suspend_targets(targets: &Vec<String>) -> state::SuspendState {
             }
 
             let proc_handle = proc_handle_result.unwrap();
-            if !suspend_process_handle( proc_handle ) {
+            if !suspend_process_handle(proc_handle) {
                 suspend_state.fail_suspend_process();
                 error!("Handle Error");
                 continue;
@@ -190,7 +190,6 @@ fn do_suspend_targets(targets: &Vec<String>) -> state::SuspendState {
 
             suspend_state.success_suspend_process(&proc_name);
             debug!("Handle Success");
-
         } else {
             suspend_state.no_match();
         }

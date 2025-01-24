@@ -2,10 +2,8 @@ use crate::config;
 
 use std::collections::BTreeSet;
 
-use log::{ info, debug, warn };
+use log::{debug, info, warn};
 use nu_ansi_term::Color;
-
-
 
 pub struct SuspendState {
     total: u32,
@@ -63,28 +61,25 @@ impl SuspendState {
     }
 
     pub fn display(&self) {
-        let body = Color::Fixed( 2).paint(format!("[ {} / {} ]",
-            self.success_suspend,
-            self.total,
-        ));
-        let tail = Color::Fixed(28).paint(format!("( with {} attempts )",
-            self.tried,
-        ));
+        let body = Color::Fixed(2).paint(format!("[ {} / {} ]", self.success_suspend, self.total,));
+        let tail = Color::Fixed(28).paint(format!("( with {} attempts )", self.tried,));
 
         info!("Done! {body} {tail}");
 
-        debug!("
+        debug!(
+            "
             \r  - GetHandle Failed : {}
             \r  - Access Denied    : {}
             \r  - Suspend Failed   : {}
-            \r", 
-            self.fail_gethandle,
-            self.fail_accessdenied,
-            self.fail_suspendprocess
+            \r",
+            self.fail_gethandle, self.fail_accessdenied, self.fail_suspendprocess
         );
 
         if !self.is_successful_run() {
-            warn!("Only {} unique process handled, some process may not handled", self.record.len());
+            warn!(
+                "Only {} unique process handled, some process may not handled",
+                self.record.len()
+            );
         }
     }
 
