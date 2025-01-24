@@ -17,7 +17,7 @@ fn main() -> Result<()> {
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
     <security>
       <requestedPrivileges>
-        <requestedExecutionLevel level="requireAdministrator" uiAccess="false" />
+        <requestedExecutionLevel level="highestAvailable" uiAccess="false" />
       </requestedPrivileges>
     </security>
   </trustInfo>
