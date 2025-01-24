@@ -22,7 +22,7 @@ fn main() -> Result<()> {
     </security>
   </trustInfo>
 </assembly>
-    "#,
+        "#,
     );
     res.set_icon("assets/icon.ico");
 
