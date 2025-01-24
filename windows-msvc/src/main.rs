@@ -27,39 +27,6 @@ use ansi_escapes::{
     ExitAlternativeScreen,
 };
 
-fn init() {
-    privilige::elevate();
-    let _ = enable_ansi_support::enable_ansi_support();
-
-    env_logger::Builder::new()
-        .filter_level(LevelFilter::Info)
-        .format(|buf, record| {
-            use std::io::Write;
-
-            let body = match record.level() {
-                Level::Error => Color::Fixed(11).paint(record.args().to_string()),
-                Level::Warn => Color::Fixed(11).paint(record.args().to_string()),
-                Level::Info => Color::Fixed(14).paint(record.args().to_string()),
-                Level::Debug => Color::Fixed(8).paint(record.args().to_string()),
-                Level::Trace => Color::Fixed(8).paint(record.args().to_string()),
-            };
-            let level_style = buf.default_level_style(record.level());
-
-            writeln!(
-                buf,
-                "  [{level_style}{:^7}{level_style:#}] {body}",
-                record.level(),
-            )
-        })
-        .init();
-
-    print!("{}", EnterAlternativeScreen,);
-}
-
-fn cleanup() {
-    print!("{}", ExitAlternativeScreen,);
-}
-
 fn main() -> eyre::Result<()> {
     let running = Arc::new(RwLock::new(true));
 
@@ -129,6 +96,39 @@ fn main() -> eyre::Result<()> {
 
     cleanup();
     Ok(())
+}
+
+fn init() {
+    privilige::elevate();
+    let _ = enable_ansi_support::enable_ansi_support();
+
+    env_logger::Builder::new()
+        .filter_level(LevelFilter::Info)
+        .format(|buf, record| {
+            use std::io::Write;
+
+            let body = match record.level() {
+                Level::Error => Color::Fixed(11).paint(record.args().to_string()),
+                Level::Warn => Color::Fixed(11).paint(record.args().to_string()),
+                Level::Info => Color::Fixed(14).paint(record.args().to_string()),
+                Level::Debug => Color::Fixed(8).paint(record.args().to_string()),
+                Level::Trace => Color::Fixed(8).paint(record.args().to_string()),
+            };
+            let level_style = buf.default_level_style(record.level());
+
+            writeln!(
+                buf,
+                "  [{level_style}{:^7}{level_style:#}] {body}",
+                record.level(),
+            )
+        })
+        .init();
+
+    print!("{}", EnterAlternativeScreen,);
+}
+
+fn cleanup() {
+    print!("{}", ExitAlternativeScreen,);
 }
 
 fn iteration_init() {
